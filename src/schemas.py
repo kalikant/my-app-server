@@ -1,25 +1,27 @@
 # src/schemas.py
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 class UserBase(BaseModel):
     first_name: str
     last_name: str
     standard_id: str
-    email: str
+    email: EmailStr
     team: str
     purpose: str
-    mrm_declaration: bool = False
-    unixuser: bool = False
-    jupyter_access: bool = False
-    hdfs_access: bool = False
-    jupyter_config: str
-    vault_config: str
-    databases: str
-    custom_profile: bool = False
-    s3_buckets: str
-    s3_buckets_access_list: str
-    quartz_access: bool = False
-    comments: str
+    mrm_policy_1: bool
+    mrm_policy_2: bool
+    mrm_policy_3: bool
+    mrm_policy_4: bool
+    mrm_policy_5: bool
+    notice_2: bool
+    vault_config: Optional[str] = ""
+    databases: Optional[str] = ""
+    custom_profile: bool
+    s3_buckets: Optional[str] = ""
+    s3_buckets_access_list: Optional[str] = ""
+    quartz_access: bool
+    comments: Optional[str] = ""
     isUserSetupCompleted: bool = False  # New field
 
 class UserCreate(UserBase):
