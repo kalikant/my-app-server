@@ -1,6 +1,7 @@
 # src/schemas.py
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import date
 
 class UserBase(BaseModel):
     first_name: str
@@ -32,6 +33,7 @@ class UserUpdate(UserBase):
 
 class User(UserBase):
     id: int
+    date: date
 
     class Config:
         orm_mode = True

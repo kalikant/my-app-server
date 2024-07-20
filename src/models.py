@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text
+from sqlalchemy import Column, Integer, String, Boolean, Text, Date
 from .database import Base
+from datetime import date
 
 class User(Base):
     __tablename__ = 'users'
@@ -11,6 +12,7 @@ class User(Base):
     email = Column(String, index=True)
     team = Column(String, index=True)
     purpose = Column(Text)
+    date = Column(Date, default=date.today)  # Set the default value to the system date
     mrm_policy_1 = Column(Boolean, default=False)
     mrm_policy_2 = Column(Boolean, default=False)
     mrm_policy_3 = Column(Boolean, default=False)
