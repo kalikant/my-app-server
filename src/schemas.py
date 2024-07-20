@@ -1,6 +1,6 @@
 # src/schemas.py
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 
 class UserBase(BaseModel):
@@ -37,3 +37,29 @@ class User(UserBase):
 
     class Config:
         orm_mode = True
+
+
+class Cluster(BaseModel):
+    name: str
+    displayName: str
+    version: str
+
+class Service(BaseModel):
+    name: str
+    type: str
+    healthSummary: str
+
+class Host(BaseModel):
+    hostname: str
+    ipAddress: str
+    rackId: str
+    healthSummary: str
+
+class Application(BaseModel):
+    appId: str
+    user: str
+    name: str
+    state: str
+    finalStatus: str
+    progress: float
+    trackingUrl: str

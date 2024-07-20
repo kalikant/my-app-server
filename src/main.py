@@ -1,8 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException,  WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException,  WebSocket, WebSocketDisconnect, UploadFile, File 
 from sqlalchemy.orm import Session
 from typing import List
 from . import models, schemas, database, onboarding
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List
+import csv
+from io import StringIO
+import requests
+from .models import Base, engine, User, Cluster, ServerUsage, OnlineUser, LiveApplication
+from pydantic import BaseModel
+from .schemas import Service, Host, Application
 
 app = FastAPI()
 
@@ -20,6 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Replace with your Cloudera Manager credentials and URL
+CM_HOST = "http://your-cloudera-manager-host:7180"
+CM_USER = "your-username"
+CM_PASSWORD = "your-password"
 
 # WebSocket manager to handle connections
 # class ConnectionManager:
@@ -101,3 +113,62 @@ def get_incomplete_users(skip: int = 0, limit: int = 10, db: Session = Depends(g
     return onboarding.get_incomplete_users(db, skip=skip, limit=limit)
 
 
+@app.post("/upload-csv/")
+async def upload_csv(file: UploadFile = File(...)):
+    if file.content_type != 'text/csv':
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a CSV file.")
+    
+    content = await file.read()
+    decoded_content = content.decode('utf-8')
+    reader = csv.DictReader(StringIO(decoded_content))
+    
+    users = []
+    for row in reader:
+        try:
+            user = User(**row)
+            users.append(user)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error parsing CSV data: {e}")
+
+    # Here you would typically save the data to the database
+    # For example:
+    # async with async_session() as session:
+    #     async with session.begin():
+    #         session.add_all(users)
+    
+    return {"message": "CSV data uploaded successfully", "users": [user.dict() for user in users]}
+
+
+
+class ChartData(BaseModel):
+    name: str
+    value: int
+
+class LineData(BaseModel):
+    name: str
+    uv: int
+
+@app.get("/api/server-usage-analysis", response_model=List[ChartData])
+def get_server_usage_analysis():
+    dummy_data = [
+        {"name": "High Usage", "value": 400},
+        {"name": "Medium Usage", "value": 300},
+        {"name": "Low Usage", "value": 300},
+        {"name": "No Usage", "value": 200},
+    ]
+    return dummy_data
+
+@app.get("/api/user-onboarding-trend", response_model=List[LineData])
+def get_user_onboarding_trend():
+    dummy_data = [
+        {"name": "Apr", "uv": 400},
+        {"name": "May", "uv": 300},
+        {"name": "Jun", "uv": 200},
+        {"name": "Jul", "uv": 278},
+        {"name": "Aug", "uv": 189},
+        {"name": "Sep", "uv": 239},
+        {"name": "Oct", "uv": 349},
+        {"name": "Nov", "uv": 430},
+        {"name": "Dec", "uv": 400},
+    ]
+    return dummy_data
