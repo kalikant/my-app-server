@@ -1,15 +1,11 @@
-from fastapi import FastAPI, Depends, HTTPException,  WebSocket, WebSocketDisconnect, UploadFile, File 
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 from . import models, schemas, database, onboarding
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
-import csv
 from io import StringIO
-import requests
-from .models import Base, engine, User, Cluster, ServerUsage, OnlineUser, LiveApplication
+import csv
 from pydantic import BaseModel
-from .schemas import Service, Host, Application
 
 app = FastAPI()
 
@@ -28,38 +24,39 @@ app.add_middleware(
 )
 
 
-# Replace with your Cloudera Manager credentials and URL
-CM_HOST = "http://your-cloudera-manager-host:7180"
-CM_USER = "your-username"
-CM_PASSWORD = "your-password"
+# Simulated LDAP user database
+mock_ldap_users = {
+    "admin_user": {
+        "username": "admin_user",
+        "password": "admin_pass",
+        "role": "admin"
+    },
+    "regular_user": {
+        "username": "regular_user",
+        "password": "user_pass",
+        "role": "user"
+    }
+}
 
-# WebSocket manager to handle connections
-# class ConnectionManager:
-#     def __init__(self):
-#         self.active_connections: List[WebSocket] = []
+# Pydantic model for login request
+class AuthRequest(BaseModel):
+    username: str
+    password: str
 
-#     async def connect(self, websocket: WebSocket):
-#         await websocket.accept()
-#         self.active_connections.append(websocket)
+# Pydantic model for login response
+class AuthResponse(BaseModel):
+    username: str
+    role: str
 
-#     def disconnect(self, websocket: WebSocket):
-#         self.active_connections.remove(websocket)
-
-#     async def send_message(self, message: str):
-#         for connection in self.active_connections:
-#             await connection.send_text(message)
-
-# manager = ConnectionManager()
-
-# @app.websocket("/ws/notifications")
-# async def websocket_endpoint(websocket: WebSocket):
-#     await manager.connect(websocket)
-#     try:
-#         while True:
-#             await websocket.receive_text()
-#     except WebSocketDisconnect:
-#         manager.disconnect(websocket)
-
+# Mocked LDAP authentication endpoint
+@app.post("/api/authenticate", response_model=AuthResponse)
+def authenticate(auth: AuthRequest):
+    user = mock_ldap_users.get(auth.username)
+    
+    if not user or user["password"] != auth.password:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    return {"username": user["username"], "role": user["role"]}
 
 # Initialize the database
 @app.on_event("startup")
@@ -77,9 +74,6 @@ def get_db():
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = onboarding.create_user(db=db, user=user)
-    # Notify connected clients about the new user
-    # import asyncio
-    # asyncio.create_task(manager.send_message("new_user"))
     return db_user
 
 @app.get("/users/{user_id}", response_model=schemas.User)
@@ -125,7 +119,7 @@ async def upload_csv(file: UploadFile = File(...)):
     users = []
     for row in reader:
         try:
-            user = User(**row)
+            user = models.User(**row)
             users.append(user)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error parsing CSV data: {e}")
@@ -137,8 +131,6 @@ async def upload_csv(file: UploadFile = File(...)):
     #         session.add_all(users)
     
     return {"message": "CSV data uploaded successfully", "users": [user.dict() for user in users]}
-
-
 
 class ChartData(BaseModel):
     name: str

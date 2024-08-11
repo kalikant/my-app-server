@@ -3,6 +3,12 @@ from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, date
 from .database import Base
+from pydantic import BaseModel
+
+class AuthRequest(BaseModel):
+    username: str
+    password: str
+
 
 class User(Base):
     __tablename__ = 'users'
